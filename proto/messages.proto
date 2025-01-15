@@ -110,7 +110,8 @@ message UserConnected {
   repeated DeploymentGroup deployment_groups = 4;
   repeated AppDeployment app_deployments = 5;
   repeated Agent agents = 6;
-  bool org_disabled = 7;
+  uint32 org_trial_ends_at = 7;
+  uint32 org_cancel_at = 8;
 }
 
 message AgentConnected {
@@ -122,7 +123,8 @@ message AgentConnected {
   repeated DeploymentGroup deployment_groups = 7;
   repeated AppDeployment app_deployments = 8;
   repeated Agent agents = 9;
-  bool org_disabled = 10;
+  uint32 org_trial_ends_at = 10;
+  uint32 org_cancel_at = 11;
 }
 
 message AppDeployment {
@@ -161,7 +163,8 @@ message AgentLeft {
 
 message OrgUpdated {
   string id = 1;
-  bool disabled = 2;
+  uint32 trial_ends_at = 10;
+  uint32 cancel_at = 11;
 }
 
 message Agent {
