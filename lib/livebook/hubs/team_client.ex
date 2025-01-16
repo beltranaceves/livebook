@@ -801,13 +801,20 @@ defmodule Livebook.Hubs.TeamClient do
     state
   end
 
-  defp update_hub(state, %LivebookProto.UserConnected{org_disabled: disabled}) do
-    update_hub(state, &put_in(&1.disabled, disabled))
+  defp update_hub(state, %struct{} = message)
+       when struct in [LivebookProto.UserConnected, LivebookProto.OrgUpdated] do
+    update_hub(
+      state,
+      &struct!(
+        &1,
+        trial_ends_at:
+          message.org_trial_ends_at > 0 && DateTime.from_unix!(message.org_trial_ends_at),
+        cancel_at: message.org_cancel_at > 0 && DateTime.from_unix!(message.org_cancel_at)
+      )
+    )
   end
 
-  defp update_hub(state, %LivebookProto.OrgUpdated{disabled: disabled}) do
-    update_hub(state, &put_in(&1.disabled, disabled))
-  end
+  # TODO: handle %AgentConnected{} ?
 
   defp update_hub(state, %LivebookProto.AgentConnected{public_key: org_public_key}) do
     update_hub(state, &put_in(&1.org_public_key, org_public_key))

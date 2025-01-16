@@ -41,7 +41,8 @@ defmodule Livebook.Hubs.Team do
     field :session_token, :string, redact: true
     field :hub_name, :string
     field :hub_emoji, :string
-    field :disabled, :boolean, default: false
+    field :trial_ends_at, :utc_datetime
+    field :cancel_at, :utc_datetime
 
     embeds_one :offline, Offline
   end
@@ -100,6 +101,22 @@ defmodule Livebook.Hubs.Team do
   """
   @spec public_key_prefix() :: String.t()
   def public_key_prefix(), do: "lb_opk_"
+
+  def billing_info(%__MODULE__{} = team) do
+    trial_days_left =
+      team.trial_ends_at && Date.diff(team.trial_ends_at, Date.utc_today())
+
+    cancelled? =
+      team.cancel_at && DateTime.after?(DateTime.utc_now(), team.cancel_at)
+
+    disabled? = (trial_days_left && trial_days_left <= 0) or cancelled?
+
+    %{
+      trial_days_left: trial_days_left,
+      cancelled?: cancelled?,
+      disabled?: disabled?
+    }
+  end
 end
 
 defimpl Livebook.Hubs.Provider, for: Livebook.Hubs.Team do

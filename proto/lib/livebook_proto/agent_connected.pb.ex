@@ -18,6 +18,6 @@ defmodule LivebookProto.AgentConnected do
     json_name: "appDeployments"
 
   field :agents, 9, repeated: true, type: LivebookProto.Agent
-  field :org_trial_ends_at, 10, type: :uint32, json_name: "orgTrialEndsAt"
-  field :org_cancel_at, 11, type: :uint32, json_name: "orgCancelAt"
+  field :org_trial_ends_at, 10, type: :int64, json_name: "orgTrialEndsAt"
+  field :org_cancel_at, 11, type: :int64, json_name: "orgCancelAt"
 end
