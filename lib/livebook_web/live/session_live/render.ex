@@ -1068,6 +1068,12 @@ defmodule LivebookWeb.SessionLive.Render do
           </button>
         </:toggle>
         <.menu_item>
+          <button role="menuitem" data-el-view-toggle="slideshow">
+            <.remix_icon icon="slideshow-2-line" />
+            <span>Slideshow</span>
+          </button>
+        </.menu_item>
+        <.menu_item>
           <button role="menuitem" data-el-view-toggle="code-zen">
             <.remix_icon icon="code-line" />
             <span>Code zen</span>

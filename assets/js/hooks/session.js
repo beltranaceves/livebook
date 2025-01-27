@@ -446,6 +446,8 @@ const Session = {
         if (!this.view || this.viewOptions.showMarkdown) {
           this.insertCellAboveFocused("markdown");
         }
+      } else if (keyBuffer.tryMatch(["v", "s"])) {
+        this.toggleView("slideshow");
       } else if (keyBuffer.tryMatch(["v", "z"])) {
         this.toggleView("code-zen");
       } else if (keyBuffer.tryMatch(["v", "p"])) {
@@ -845,6 +847,88 @@ const Session = {
     });
   },
 
+  /**
+   * 
+   * 
+   */
+  initializeSlideshow() {
+    console.log("trying to initialize slideshow")
+    this.slideshowState = {
+      currentSectionIndex: 0,
+      sections: this.getSectionIds()
+    };
+    
+    this.initializeSlideshowControls();
+    this.showCurrentSlide();
+    
+    // Add keyboard listeners
+    this._handleSlideshowKeyDown = this.handleSlideshowKeyDown.bind(this);
+    document.addEventListener("keydown", this._handleSlideshowKeyDown);
+  },
+
+  initializeSlideshowControls() {
+    const controls = document.createElement('div');
+    controls.setAttribute('data-el-slideshow-controls', '');
+    controls.innerHTML = `
+      <button data-btn-prev class="button-base button-outlined">Previous</button>
+      <span class="slide-counter">${this.slideshowState.currentSectionIndex + 1}/${this.slideshowState.sections.length}</span>
+      <button data-btn-next class="button-base button-outlined">Next</button>
+    `;
+    
+    controls.querySelector('[data-btn-prev]').addEventListener('click', () => this.prevSlide());
+    controls.querySelector('[data-btn-next]').addEventListener('click', () => this.nextSlide());
+    
+    this.el.appendChild(controls);
+  },
+
+  destroySlideshowControls() {
+    document.removeEventListener("keydown", this._handleSlideshowKeyDown);
+    this.el.querySelector('[data-el-slideshow-controls]')?.remove();
+    this.getSections().forEach(section => section.style.removeProperty('display'));
+  },
+
+  handleSlideshowKeyDown(event) {
+    console.log("I AM HANDLING IT")
+    if (this.view !== "slideshow") return;
+    
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      this.nextSlide();
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      this.prevSlide();
+    }
+  },
+
+  showCurrentSlide() {
+    const { currentSectionIndex, sections } = this.slideshowState;
+    
+    this.getSections().forEach((section, index) => {
+      section.style.display = index === currentSectionIndex ? 'block' : 'none';
+    });
+    
+    const currentSection = this.getSectionById(sections[currentSectionIndex]);
+    currentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    // Update counter
+    const counter = this.el.querySelector('[data-el-slideshow-controls] .slide-counter');
+    counter.textContent = `${currentSectionIndex + 1}/${sections.length}`;
+  },
+
+  nextSlide() {
+    const { currentSectionIndex, sections } = this.slideshowState;
+    if (currentSectionIndex < sections.length - 1) {
+      this.slideshowState.currentSectionIndex++;
+      this.showCurrentSlide();
+    }
+  },
+
+  prevSlide() {
+    const { currentSectionIndex } = this.slideshowState;
+    if (currentSectionIndex > 0) {
+      this.slideshowState.currentSectionIndex--;
+      this.showCurrentSlide();
+    }
+  },
+
   // User action handlers (mostly keybindings)
 
   toggleOutline(force = null) {
@@ -1129,6 +1213,19 @@ const Session = {
       if (view === "custom") {
         this.customViewSettingsSubscription.destroy();
       }
+      if (view === "slideshow") {
+        this.destroySlideshowControls();
+      }
+    } else if (view === "slideshow") {
+      this.setView(view, {
+        showSection: true,
+        showMarkdown: true,
+        showCode: true,
+        showOutput: true,
+        spotlight: false, // TODO: Beltran should this be true?
+        slideshow: true
+      });
+      this.initializeSlideshow();
     } else if (view === "code-zen") {
       this.setView(view, {
         showSection: false,

@@ -339,4 +339,28 @@ server in solely client-side operations.
       @apply hidden;
     }
   }
+
+  [data-el-slideshow-controls] {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--gray-900);
+    padding: 12px 24px;
+    border-radius: 8px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  [data-el-slideshow-controls] .slide-counter {
+    color: var(--gray-200);
+    font-size: 14px;
+  }
+
+  [data-js-view="slideshow"] [data-el-section] {
+    min-height: 100vh;
+    padding: 40px;
+  }
 }
