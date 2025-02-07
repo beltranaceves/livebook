@@ -254,6 +254,7 @@ server in solely client-side operations.
   /* Session views */
 
   &[data-js-view="code-zen"] [data-el-view-toggle="code-zen"],
+  &[data-js-view="slideshow"] [data-el-view-toggle="slideshow"],	
   &[data-js-view="presentation"] [data-el-view-toggle="presentation"],
   &[data-js-view="custom"] [data-el-view-toggle="custom"] {
     @apply text-green-bright-400;
@@ -340,27 +341,15 @@ server in solely client-side operations.
     }
   }
 
-  [data-el-slideshow-controls] {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--gray-900);
-    padding: 12px 24px;
-    border-radius: 8px;
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    z-index: 1000;
-  }
+  &[data-js-slideshow] {
+    [data-el-slideshow-controls] {
+      @apply block;
+    }
 
-  [data-el-slideshow-controls] .slide-counter {
-    color: var(--gray-200);
-    font-size: 14px;
-  }
-
-  [data-js-view="slideshow"] [data-el-section] {
-    min-height: 100vh;
-    padding: 40px;
+    [data-el-sidebar],
+    [data-el-side-panel],
+    [data-el-toggle-sidebar] {
+      @apply hidden;
+    }
   }
 }

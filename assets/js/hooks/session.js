@@ -853,6 +853,7 @@ const Session = {
    */
   initializeSlideshow() {
     console.log("trying to initialize slideshow")
+    const notebookHeadline = this.el.querySelector(`[data-el-notebook-headline]`).getAttribute("data-section-id");
     this.slideshowState = {
       currentSectionIndex: 0,
       sections: this.getSectionIds()
@@ -867,28 +868,22 @@ const Session = {
   },
 
   initializeSlideshowControls() {
-    const controls = document.createElement('div');
-    controls.setAttribute('data-el-slideshow-controls', '');
-    controls.innerHTML = `
-      <button data-btn-prev class="button-base button-outlined">Previous</button>
-      <span class="slide-counter">${this.slideshowState.currentSectionIndex + 1}/${this.slideshowState.sections.length}</span>
-      <button data-btn-next class="button-base button-outlined">Next</button>
-    `;
-    
+    const controls = document.querySelector('[data-el-slideshow-controls]');
+    const slide_counter = controls.querySelector('.slide-counter')
+    slide_counter.innerHTML = `${this.slideshowState.currentSectionIndex + 1}/${this.slideshowState.sections.length}`;	
+
     controls.querySelector('[data-btn-prev]').addEventListener('click', () => this.prevSlide());
     controls.querySelector('[data-btn-next]').addEventListener('click', () => this.nextSlide());
-    
-    this.el.appendChild(controls);
+    // controls.style.display = 'flex';
   },
 
   destroySlideshowControls() {
     document.removeEventListener("keydown", this._handleSlideshowKeyDown);
-    this.el.querySelector('[data-el-slideshow-controls]')?.remove();
+    // document.querySelector('[data-el-slideshow-controls]').style.display = 'none';
     this.getSections().forEach(section => section.style.removeProperty('display'));
   },
 
   handleSlideshowKeyDown(event) {
-    console.log("I AM HANDLING IT")
     if (this.view !== "slideshow") return;
     
     if (event.key === "ArrowRight" || event.key === "ArrowDown") {
@@ -906,7 +901,7 @@ const Session = {
     });
     
     const currentSection = this.getSectionById(sections[currentSectionIndex]);
-    currentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    currentSection.scrollIntoView({ behavior: 'instant', block: 'start' });
     
     // Update counter
     const counter = this.el.querySelector('[data-el-slideshow-controls] .slide-counter');
@@ -1233,6 +1228,7 @@ const Session = {
         showCode: true,
         showOutput: true,
         spotlight: false,
+        slideshow: false
       });
     } else if (view === "presentation") {
       this.setView(view, {
@@ -1241,6 +1237,7 @@ const Session = {
         showCode: true,
         showOutput: true,
         spotlight: true,
+        slideshow: false
       });
     } else if (view === "custom") {
       this.customViewSettingsSubscription = settingsStore.getAndSubscribe(
@@ -1275,6 +1272,7 @@ const Session = {
   },
 
   setView(view, options) {
+    console.log("setting view:", options)
     this.view = view;
     this.viewOptions = options;
 
@@ -1285,6 +1283,7 @@ const Session = {
     this.el.toggleAttribute("data-js-hide-code", !options.showCode);
     this.el.toggleAttribute("data-js-hide-output", !options.showOutput);
     this.el.toggleAttribute("data-js-spotlight", options.spotlight);
+    this.el.toggleAttribute("data-js-slideshow", options.slideshow);
   },
 
   unsetView() {
@@ -1298,6 +1297,7 @@ const Session = {
     this.el.removeAttribute("data-js-hide-code");
     this.el.removeAttribute("data-js-hide-output");
     this.el.removeAttribute("data-js-spotlight");
+    this.el.removeAttribute("data-js-slideshow");
   },
 
   toggleCollapseSection() {
