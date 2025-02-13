@@ -3169,6 +3169,10 @@ defmodule Livebook.Session do
   # attributes that are missing.
   defp normalize_runtime_output(output)
 
+  defp normalize_runtime_output(%{type: :plain_text} = plain_text) do
+    Map.put_new(plain_text, :style, [])
+  end
+
   # Traverse composite outputs
 
   defp normalize_runtime_output(%{type: :grid} = grid) do
@@ -3307,8 +3311,9 @@ defmodule Livebook.Session do
 
         :form ->
           Map.update!(attrs, :fields, fn fields ->
-            Enum.map(fields, fn {field, attrs} ->
-              {field, normalize_runtime_output({:input, attrs})}
+            Enum.map(fields, fn
+              {field, nil} -> {field, nil}
+              {field, attrs} -> {field, normalize_runtime_output({:input, attrs})}
             end)
           end)
 
