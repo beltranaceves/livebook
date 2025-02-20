@@ -1421,6 +1421,7 @@ defmodule LivebookWeb.SessionLive.Render do
   end
 
   defp slideshow_controls(assigns) do
+    # TODO: Beltran decide to add buttons to ui or not, hidden for now
     ~H"""
     <div class="fixed bottom-5 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg flex gap-4 items-center z-[1000] hidden" data-el-slideshow-controls>
       <button data-btn-prev class="button-base border-2 border-gray-600 bg-gray-600 hover:bg-gray-800 hover:border-gray-800 text-white rounded-lg px-4 py-1">Previous</button>
