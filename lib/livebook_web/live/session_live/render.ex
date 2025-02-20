@@ -1069,7 +1069,7 @@ defmodule LivebookWeb.SessionLive.Render do
         </:toggle>
         <.menu_item>
           <button role="menuitem" data-el-view-toggle="slideshow">
-            <.remix_icon icon="slideshow-2-line" />
+            <.remix_icon icon="slideshow-view" />
             <span>Slideshow</span>
           </button>
         </.menu_item>

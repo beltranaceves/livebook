@@ -343,7 +343,7 @@ server in solely client-side operations.
 
   &[data-js-slideshow] {
     [data-el-slideshow-controls] {
-      @apply block;
+      /* @apply block; */
     }
 
     [data-el-sidebar],

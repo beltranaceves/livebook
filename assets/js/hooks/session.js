@@ -852,16 +852,18 @@ const Session = {
    * 
    */
   initializeSlideshow() {
-    console.log("trying to initialize slideshow")
     const notebookHeadline = this.el.querySelector(`[data-el-notebook-headline]`).getAttribute("data-section-id");
     this.slideshowState = {
       currentSectionIndex: 0,
       sections: this.getSectionIds()
     };
     
-    this.initializeSlideshowControls();
+    // this.initializeSlideshowControls();
     this.showCurrentSlide();
     
+    // Add scroll listener
+    this._handleSlideshowScroll = this.handleSlideshowScroll.bind(this);
+    document.addEventListener('wheel', this._handleSlideshowScroll, { passive: false });
     // Add keyboard listeners
     this._handleSlideshowKeyDown = this.handleSlideshowKeyDown.bind(this);
     document.addEventListener("keydown", this._handleSlideshowKeyDown);
@@ -881,6 +883,10 @@ const Session = {
     document.removeEventListener("keydown", this._handleSlideshowKeyDown);
     // document.querySelector('[data-el-slideshow-controls]').style.display = 'none';
     this.getSections().forEach(section => section.style.removeProperty('display'));
+
+    document.removeEventListener('wheel', this._handleSlideshowScroll);
+    clearTimeout(this.scrollTimeout);
+    this.scrollTimeout = null;
   },
 
   handleSlideshowKeyDown(event) {
@@ -893,6 +899,41 @@ const Session = {
     }
   },
 
+  
+handleSlideshowScroll(event) {
+  if (this.view !== "slideshow") return;
+
+    const notebook = this.getElement("notebook");
+    const currentSection = this.getSectionById(this.slideshowState.sections[this.slideshowState.currentSectionIndex]);
+    
+    // Check if we're at the boundaries
+    const isAtTop = notebook.scrollTop <= currentSection.offsetTop;
+    const isAtBottom = notebook.scrollTop + notebook.clientHeight >= currentSection.offsetTop + currentSection.offsetHeight;
+
+    if ((isAtTop && event.deltaY < 0) || (isAtBottom && event.deltaY > 0)) {
+      event.preventDefault();
+      
+      if (!this.slideshowState.isTransitioning) {
+        this.slideshowState.isTransitioning = true;
+        
+        if (event.deltaY > 0) {
+          this.nextSlide();
+        } else {
+          this.prevSlide();
+        }
+
+        // Reset transition lock after animation
+        setTimeout(() => {
+          this.slideshowState.isTransitioning = false;
+        }, 200);
+      }
+    }
+  },
+
+  updateSlideCounter() {
+    const counter = this.el.querySelector('[data-el-slideshow-controls] .slide-counter');
+    counter.textContent = `${this.slideshowState.currentSectionIndex + 1}/${this.slideshowState.sections.length}`;
+  },
   showCurrentSlide() {
     const { currentSectionIndex, sections } = this.slideshowState;
     
@@ -1217,7 +1258,7 @@ const Session = {
         showMarkdown: true,
         showCode: true,
         showOutput: true,
-        spotlight: false, // TODO: Beltran should this be true?
+        spotlight: false,
         slideshow: true
       });
       this.initializeSlideshow();
