@@ -548,7 +548,8 @@ defmodule LivebookWeb.SessionLiveTest do
               id: "input1",
               destination: test,
               attrs: %{type: :text, default: "initial", label: "Name", debounce: :blur}
-            }
+            },
+            value: nil
           ],
           submit: "Send",
           report_changes: %{},
@@ -575,7 +576,8 @@ defmodule LivebookWeb.SessionLiveTest do
       |> element(~s/[data-el-outputs-container] button/, "Send")
       |> render_click()
 
-      assert_receive {:event, "control_ref1", %{data: %{name: "sherlock"}, type: :submit}}
+      assert_receive {:event, "control_ref1",
+                      %{data: %{name: "sherlock", value: nil}, type: :submit}}
     end
 
     test "file input", %{conn: conn, session: session, test: test} do
@@ -616,6 +618,72 @@ defmodule LivebookWeb.SessionLiveTest do
       send(session.pid, {:runtime_file_path_request, self(), file_ref})
       assert_receive {:runtime_file_path_reply, {:ok, path}}
       assert File.read!(path) == "content"
+    end
+
+    test "enabling a language", %{conn: conn, session: session} do
+      {:ok, view, _} = live(conn, ~p"/sessions/#{session.id}")
+
+      view
+      |> element("[data-el-language-buttons] button", "Python")
+      |> render_click()
+
+      assert %{
+               notebook: %{
+                 setup_section: %{cells: [%Cell.Code{}, %Cell.Code{language: :"pyproject.toml"}]},
+                 default_language: :python
+               }
+             } = Session.get_data(session.pid)
+
+      refute view
+             |> element("[data-el-language-buttons] button", "Python")
+             |> has_element?()
+    end
+
+    test "disabling a language", %{conn: conn, session: session} do
+      Session.enable_language(session.pid, :python)
+
+      {:ok, view, _} = live(conn, ~p"/sessions/#{session.id}")
+
+      refute view
+             |> element("[data-el-language-buttons] button", "Python")
+             |> has_element?()
+
+      view
+      |> element(~s/button[phx-click="disable_language"]/)
+      |> render_click()
+
+      assert %{notebook: %{setup_section: %{cells: [%Cell.Code{}]}}} =
+               Session.get_data(session.pid)
+
+      assert view
+             |> element("[data-el-language-buttons] button", "Python")
+             |> has_element?()
+    end
+
+    test "changing cell language", %{conn: conn, session: session} do
+      {:ok, view, _} = live(conn, ~p"/sessions/#{session.id}")
+
+      section_id = insert_section(session.pid)
+      cell_id = insert_text_cell(session.pid, section_id, :code)
+
+      view
+      |> element(~s/#cell-#{cell_id} button/, "Erlang")
+      |> render_click()
+
+      assert %{notebook: %{sections: [%{cells: [%Cell.Code{language: :erlang}]}]}} =
+               Session.get_data(session.pid)
+    end
+
+    test "shows an error when a cell langauge is not enabled", %{conn: conn, session: session} do
+      section_id = insert_section(session.pid)
+      cell_id = insert_text_cell(session.pid, section_id, :code)
+
+      Session.set_cell_attributes(session.pid, cell_id, %{language: :python})
+
+      {:ok, view, _} = live(conn, ~p"/sessions/#{session.id}")
+
+      assert render(view) =~ "Python is not enabled for the current notebook."
+      assert render(view) =~ "Enable Python"
     end
   end
 
@@ -2345,16 +2413,20 @@ defmodule LivebookWeb.SessionLiveTest do
 
       section_id = insert_section(session.pid)
 
-      cell_id = insert_text_cell(session.pid, section_id, :code, ~s{System.get_env("PATH")})
+      # Note that we use IO.write, to make sure the value is not truncated
+      # (which inspect does)
+      cell_id =
+        insert_text_cell(session.pid, section_id, :code, ~s{IO.write(System.get_env("PATH"))})
 
       view
       |> element(~s{[data-el-session]})
       |> render_hook("queue_cell_evaluation", %{"cell_id" => cell_id})
 
       assert_receive {:operation,
-                      {:add_cell_evaluation_response, _, ^cell_id, terminal_text(output), _}}
+                      {:add_cell_evaluation_output, _, ^cell_id, terminal_text(output, true)}}
 
-      assert output == "\e[32m\"#{String.replace(expected_path, "\\", "\\\\")}\"\e[0m"
+      assert output == expected_path
+      # assert output == "\e[32m\"#{String.replace(expected_path, "\\", "\\\\")}\"\e[0m"
 
       Settings.unset_env_var("PATH")
 
@@ -2363,9 +2435,9 @@ defmodule LivebookWeb.SessionLiveTest do
       |> render_hook("queue_cell_evaluation", %{"cell_id" => cell_id})
 
       assert_receive {:operation,
-                      {:add_cell_evaluation_response, _, ^cell_id, terminal_text(output), _}}
+                      {:add_cell_evaluation_output, _, ^cell_id, terminal_text(output, true)}}
 
-      assert output == "\e[32m\"#{String.replace(initial_os_path, "\\", "\\\\")}\"\e[0m"
+      assert output == initial_os_path
     end
   end
 
@@ -2879,5 +2951,33 @@ defmodule LivebookWeb.SessionLiveTest do
            )
   after
     Code.put_compiler_option(:debug_info, false)
+  end
+
+  test "python code evaluation end-to-end", %{conn: conn, session: session} do
+    # Use the standalone runtime, to install Pythonx and setup the interpreter
+    Session.set_runtime(session.pid, Runtime.Standalone.new())
+
+    {:ok, view, _} = live(conn, ~p"/sessions/#{session.id}")
+
+    Session.subscribe(session.id)
+
+    view
+    |> element("[data-el-language-buttons] button", "Python")
+    |> render_click()
+
+    section_id = insert_section(session.pid)
+
+    cell_id =
+      insert_text_cell(session.pid, section_id, :code, "len([1, 2])", %{language: :python})
+
+    view
+    |> element(~s{[data-el-session]})
+    |> render_hook("queue_cell_evaluation", %{"cell_id" => cell_id})
+
+    assert_receive {:operation,
+                    {:add_cell_evaluation_response, _, ^cell_id, terminal_text(output), _}},
+                   20_000
+
+    assert output == "2"
   end
 end

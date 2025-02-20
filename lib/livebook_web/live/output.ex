@@ -35,30 +35,32 @@ defmodule LivebookWeb.Output do
   defp border?(%{type: :grid, boxed: boxed}), do: boxed
   defp border?(_output), do: false
 
-  defp render_output(%{type: :terminal_text, text: text}, %{id: id}) do
-    text = if(text == :__pruned__, do: nil, else: text)
-    assigns = %{id: id, text: text}
+  defp render_output(%{type: :terminal_text} = output, %{id: id}) do
+    assigns = %{id: id, output: output}
 
     ~H"""
-    <.live_component module={Output.TerminalTextComponent} id={@id} text={@text} />
+    <.live_component module={Output.TerminalTextComponent} id={@id} output={@output} />
     """
   end
 
-  defp render_output(%{type: :plain_text, text: text}, %{id: id}) do
-    text = if(text == :__pruned__, do: nil, else: text)
-    assigns = %{id: id, text: text}
+  defp render_output(%{type: :plain_text} = output, %{id: id}) do
+    assigns = %{id: id, output: output}
 
     ~H"""
-    <.live_component module={Output.PlainTextComponent} id={@id} text={@text} />
+    <.live_component module={Output.PlainTextComponent} id={@id} output={@output} />
     """
   end
 
-  defp render_output(%{type: :markdown, text: text}, %{id: id, session_id: session_id}) do
-    text = if(text == :__pruned__, do: nil, else: text)
-    assigns = %{id: id, session_id: session_id, text: text}
+  defp render_output(%{type: :markdown} = output, %{id: id, session_id: session_id}) do
+    assigns = %{id: id, session_id: session_id, output: output}
 
     ~H"""
-    <.live_component module={Output.MarkdownComponent} id={@id} session_id={@session_id} text={@text} />
+    <.live_component
+      module={Output.MarkdownComponent}
+      id={@id}
+      session_id={@session_id}
+      output={@output}
+    />
     """
   end
 
@@ -347,7 +349,7 @@ defmodule LivebookWeb.Output do
   defp render_output(%{type: :error, context: :dependencies} = output, %{id: id, cell_id: cell_id}) do
     assigns = %{message: output.message, id: id, cell_id: cell_id}
 
-    if cell_id == Livebook.Notebook.Cell.setup_cell_id() do
+    if cell_id == Livebook.Notebook.Cell.main_setup_cell_id() do
       ~H"""
       <div class="flex flex-col gap-4">
         <div class="flex items-center justify-between gap-2" style="color: var(--ansi-color-red);">
