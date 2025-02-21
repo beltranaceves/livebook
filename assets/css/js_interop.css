@@ -375,7 +375,8 @@ server in solely client-side operations.
       @apply flex;
     }
 
-    [data-secondary] {
+    [data-secondary],
+    [data-el-section-actions] {
       @apply hidden;
     }
 
