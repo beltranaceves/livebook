@@ -881,6 +881,9 @@ const Session = {
   },
 
   destroySlideshow() {
+    // Get current section before cleanup
+    const currentSection = this.getSectionById(this.slideshowState.sections[this.slideshowState.currentSectionIndex]);
+
     // Un-hide title and dependencies section
     const notebookContent = this.el.querySelector('[data-el-notebook-content]');
     if (notebookContent) {
@@ -891,6 +894,17 @@ const Session = {
       });
     }
     this.getSections().forEach(section => section.style.removeProperty('display'));
+
+    // Add a small delay to ensude DOM updates are complete before scrolling TODO: Beltran find a more elegant solution
+    setTimeout(() => { 
+      currentSection.scrollIntoView({ behavior: 'instant', block: 'start' });
+      // Find and focus the first cell in the current section
+      const firstCell = currentSection.querySelector('[data-el-cell]');
+      if (firstCell) {
+        const cellId = firstCell.getAttribute('data-focusable-id');
+        this.setFocusedEl(cellId, { scroll: false });
+      }
+    }, 10);  
 
     document.removeEventListener("keydown", this._handleSlideshowKeyDown);
     document.removeEventListener('wheel', this._handleSlideshowScroll);
@@ -938,7 +952,8 @@ const Session = {
     });
     
     const currentSection = this.getSectionById(sections[currentSectionIndex]);
-    currentSection.scrollIntoView({ behavior: 'instant', block: 'center' });
+    currentSection.scrollIntoView({ behavior: 'instant', block: 'start' });
+    console.log("one")
   },
 
   nextSlide() {
