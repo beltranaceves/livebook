@@ -125,7 +125,7 @@ defmodule Livebook.MixProject do
       {:floki, ">= 0.27.0", only: :test},
       {:bypass, "~> 2.1", only: :test},
       # So that we can test Python evaluation in the same node
-      {:pythonx, github: "livebook-dev/pythonx", only: :test},
+      {:pythonx, "~> 0.3.0", only: :test},
       # ZTA deps
       {:jose, "~> 1.11.5"},
       {:req, "~> 0.5.8"},
@@ -258,6 +258,7 @@ defmodule Livebook.MixProject do
       "docs/teams/intro_to_teams.md",
       "docs/teams/shared_secrets.md",
       "docs/teams/shared_file_storages.md",
+      {"docs/teams/email_domain.md", title: "Email domain auth"},
       {"docs/teams/oidc_sso.md", title: "OIDC SSO"},
       "docs/authentication/basic_auth.md",
       "docs/authentication/cloudflare.md",
