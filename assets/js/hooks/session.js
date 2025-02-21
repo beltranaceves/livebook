@@ -853,14 +853,8 @@ const Session = {
   initializeSlideshow() {
     // Hide title and dependencies section
     const notebookContent = this.el.querySelector('[data-el-notebook-content]');
-    if (notebookContent) {
-      Array.from(notebookContent.children).forEach(child => {
-        if (!child.hasAttribute('data-el-sections-container')) {
-          child.classList.add('hidden');
-        }
-      });
-    }
-
+    notebookContent.toggleAttribute('data-js-notebook-content-slideshow');
+    
     const viewedSection = this.el.querySelector(`[data-js-is-viewed]`);
     const currentSectionId = viewedSection ? viewedSection.getAttribute("data-section-id") : null;
     const allSections = this.getSectionIds();
@@ -886,13 +880,8 @@ const Session = {
 
     // Un-hide title and dependencies section
     const notebookContent = this.el.querySelector('[data-el-notebook-content]');
-    if (notebookContent) {
-      Array.from(notebookContent.children).forEach(child => {
-        if (!child.hasAttribute('data-el-sections-container')) {
-          child.classList.remove('hidden');
-        }
-      });
-    }
+    notebookContent.toggleAttribute('data-js-notebook-content-slideshow');
+
     this.getSections().forEach(section => section.style.removeProperty('display'));
 
     // Add a small delay to ensude DOM updates are complete before scrolling TODO: Beltran find a more elegant solution

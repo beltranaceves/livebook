@@ -389,4 +389,8 @@ server in solely client-side operations.
       @apply my-0;
     }
   }
+
+  [data-js-notebook-content-slideshow] > *:not([data-el-sections-container]) {
+      @apply hidden;
+  }
 }
