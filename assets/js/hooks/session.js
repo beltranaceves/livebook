@@ -1305,7 +1305,6 @@ const Session = {
   },
 
   setView(view, options) {
-    console.log("setting view:", options)
     this.view = view;
     this.viewOptions = options;
 
