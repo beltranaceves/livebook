@@ -951,9 +951,8 @@ const Session = {
       section.style.display = index === currentSectionIndex ? 'block' : 'none';
     });
     
-    const currentSection = this.getSectionById(sections[currentSectionIndex]);
-    currentSection.scrollIntoView({ behavior: 'instant', block: 'start' });
-    console.log("one")
+    const notebook = this.getElement("notebook");
+    notebook.scrollTo(0, 0);
   },
 
   nextSlide() {
