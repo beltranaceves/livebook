@@ -371,14 +371,22 @@ server in solely client-side operations.
   }
 
   &[data-js-slideshow] {
-    /* [data-el-slideshow-controls] { // TODO: Beltran decide to throw this away or not
-      @apply block;
-    } */
+    [data-el-actions] {
+      @apply flex;
+    }
+
+    [data-secondary] {
+      @apply hidden;
+    }
 
     [data-el-sidebar],
     [data-el-side-panel],
     [data-el-toggle-sidebar] {
       @apply hidden;
+    }
+    
+    [data-el-section] {
+      @apply my-0;
     }
   }
 }

@@ -848,92 +848,88 @@ const Session = {
   },
 
   /**
-   * 
-   * 
+   * Initialize slideshow state and event handlers.
    */
   initializeSlideshow() {
-    const notebookHeadline = this.el.querySelector(`[data-el-notebook-headline]`).getAttribute("data-section-id");
-    this.slideshowState = {
-      currentSectionIndex: 0,
-      sections: this.getSectionIds()
-    };
+    // Hide title and dependencies section
+    const notebookContent = this.el.querySelector('[data-el-notebook-content]');
+    if (notebookContent) {
+      Array.from(notebookContent.children).forEach(child => {
+        if (!child.hasAttribute('data-el-sections-container')) {
+          child.classList.add('hidden');
+        }
+      });
+    }
+
+    const viewedSection = this.el.querySelector(`[data-js-is-viewed]`);
+    const currentSectionId = viewedSection ? viewedSection.getAttribute("data-section-id") : null;
+    const allSections = this.getSectionIds();
     
-    // this.initializeSlideshowControls();
+    this.slideshowState = {
+        currentSectionIndex: currentSectionId ? allSections.indexOf(currentSectionId) : 0,
+        sections: allSections
+    };
     this.showCurrentSlide();
     
-    // Add scroll listener
-    this._handleSlideshowScroll = this.handleSlideshowScroll.bind(this);
-    document.addEventListener('wheel', this._handleSlideshowScroll, { passive: false });
     // Add keyboard listeners
     this._handleSlideshowKeyDown = this.handleSlideshowKeyDown.bind(this);
     document.addEventListener("keydown", this._handleSlideshowKeyDown);
+    // Add mouse click listeners
+    this._handleSlideshowClick = this.handleSlideshowClick.bind(this);
+    document.addEventListener("click", this._handleSlideshowClick);
+    document.addEventListener("contextmenu", this._handleSlideshowClick);
   },
 
-  initializeSlideshowControls() {
-    const controls = document.querySelector('[data-el-slideshow-controls]');
-    const slide_counter = controls.querySelector('.slide-counter')
-    slide_counter.innerHTML = `${this.slideshowState.currentSectionIndex + 1}/${this.slideshowState.sections.length}`;	
-
-    controls.querySelector('[data-btn-prev]').addEventListener('click', () => this.prevSlide());
-    controls.querySelector('[data-btn-next]').addEventListener('click', () => this.nextSlide());
-    // controls.style.display = 'flex';
-  },
-
-  destroySlideshowControls() {
-    document.removeEventListener("keydown", this._handleSlideshowKeyDown);
-    // document.querySelector('[data-el-slideshow-controls]').style.display = 'none';
+  destroySlideshow() {
+    // Un-hide title and dependencies section
+    const notebookContent = this.el.querySelector('[data-el-notebook-content]');
+    if (notebookContent) {
+      Array.from(notebookContent.children).forEach(child => {
+        if (!child.hasAttribute('data-el-sections-container')) {
+          child.classList.remove('hidden');
+        }
+      });
+    }
     this.getSections().forEach(section => section.style.removeProperty('display'));
 
+    document.removeEventListener("keydown", this._handleSlideshowKeyDown);
     document.removeEventListener('wheel', this._handleSlideshowScroll);
+    document.removeEventListener("click", this._handleSlideshowClick);
+    document.removeEventListener("contextmenu", this._handleSlideshowClick);
+
     clearTimeout(this.scrollTimeout);
     this.scrollTimeout = null;
+  },
+  handleSlideshowClick(event) {
+    if (this.view !== "slideshow") return;
+    
+      // Only handle clicks on the notebook background
+      const notebook = this.getElement("notebook");
+      if (event.target !== notebook) return;
+      
+      // Prevent context menu on right click
+      if (event.type === "contextmenu") {
+          event.preventDefault();
+          this.prevSlide();
+      } else {
+          this.nextSlide();
+      }
   },
 
   handleSlideshowKeyDown(event) {
     if (this.view !== "slideshow") return;
     
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+    if (event.key === "ArrowRight" 
+      // || event.key === "ArrowDown" // TODO: Beltran decide if i want these for up down scroll, rather than next/previous
+    ) {
       this.nextSlide();
-    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+    } else if (event.key === "ArrowLeft" 
+      // || event.key === "ArrowUp" TODO: Beltran decide if i want these for up down scroll, rather than next/previous
+    ) {
       this.prevSlide();
     }
   },
 
-  
-handleSlideshowScroll(event) {
-  if (this.view !== "slideshow") return;
-
-    const notebook = this.getElement("notebook");
-    const currentSection = this.getSectionById(this.slideshowState.sections[this.slideshowState.currentSectionIndex]);
-    
-    // Check if we're at the boundaries
-    const isAtTop = notebook.scrollTop <= currentSection.offsetTop;
-    const isAtBottom = notebook.scrollTop + notebook.clientHeight >= currentSection.offsetTop + currentSection.offsetHeight;
-
-    if ((isAtTop && event.deltaY < 0) || (isAtBottom && event.deltaY > 0)) {
-      event.preventDefault();
-      
-      if (!this.slideshowState.isTransitioning) {
-        this.slideshowState.isTransitioning = true;
-        
-        if (event.deltaY > 0) {
-          this.nextSlide();
-        } else {
-          this.prevSlide();
-        }
-
-        // Reset transition lock after animation
-        setTimeout(() => {
-          this.slideshowState.isTransitioning = false;
-        }, 200);
-      }
-    }
-  },
-
-  updateSlideCounter() {
-    const counter = this.el.querySelector('[data-el-slideshow-controls] .slide-counter');
-    counter.textContent = `${this.slideshowState.currentSectionIndex + 1}/${this.slideshowState.sections.length}`;
-  },
   showCurrentSlide() {
     const { currentSectionIndex, sections } = this.slideshowState;
     
@@ -942,11 +938,7 @@ handleSlideshowScroll(event) {
     });
     
     const currentSection = this.getSectionById(sections[currentSectionIndex]);
-    currentSection.scrollIntoView({ behavior: 'instant', block: 'start' });
-    
-    // Update counter
-    const counter = this.el.querySelector('[data-el-slideshow-controls] .slide-counter');
-    counter.textContent = `${currentSectionIndex + 1}/${sections.length}`;
+    currentSection.scrollIntoView({ behavior: 'instant', block: 'center' });
   },
 
   nextSlide() {
@@ -1250,7 +1242,7 @@ handleSlideshowScroll(event) {
         this.customViewSettingsSubscription.destroy();
       }
       if (view === "slideshow") {
-        this.destroySlideshowControls();
+        this.destroySlideshow();
       }
     } else if (view === "slideshow") {
       this.setView(view, {
