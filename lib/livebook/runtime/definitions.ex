@@ -506,6 +506,8 @@ defmodule Livebook.Runtime.Definitions do
   def snippet_definitions(), do: @snippet_definitions
 
   def pythonx_dependency() do
-    %{dep: {:pythonx, "~> 0.3.0"}, config: []}
+    %{dep: {:pythonx, "~> 0.4.0"}, config: []}
   end
+
+  def pythonx_requirement(), do: "~> 0.4.0"
 end

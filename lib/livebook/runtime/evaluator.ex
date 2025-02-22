@@ -1005,7 +1005,25 @@ defmodule Livebook.Runtime.Evaluator do
       |> Map.replace!(:requires, [Pythonx])
       |> Map.replace!(:macros, [{Pythonx, [{:sigil_PY, 2}]}])
 
-    Macro.expand_once(quoted, env)
+    ast = Macro.expand_once(quoted, env)
+
+    # We modify the Pythonx.eval/2 call to specify the :stderr_device
+    # option. We want to Python stderr output to also be send to our
+    # group leader. By default it would be sent to our :standard_error,
+    # which sends it further to sender's group leader, however the
+    # sender is a process in the Pythonx supervision tree and has the
+    # default group leader.mix
+    Macro.prewalk(ast, fn
+      {{:., _, [{:__aliases__, _, [:Pythonx]}, :eval]} = target, meta, [code, globals]} ->
+        opts = [
+          stderr_device: {{:., [], [{:__aliases__, [], [:Process]}, :group_leader]}, [], []}
+        ]
+
+        {target, meta, [code, globals, opts]}
+
+      other ->
+        other
+    end)
   end
 
   defp eval_pyproject_toml(code, binding, env) do
@@ -1035,20 +1053,34 @@ defmodule Livebook.Runtime.Evaluator do
   end
 
   defp ensure_pythonx() do
-    if Code.ensure_loaded?(Pythonx) do
-      :ok
-    else
-      message =
-        """
-        Pythonx is missing, make sure to add it as a dependency:
+    pythonx_requirement = Livebook.Runtime.Definitions.pythonx_requirement()
 
-            #{Macro.to_string(Livebook.Runtime.Definitions.pythonx_dependency().dep)}
-        """
+    cond do
+      not Code.ensure_loaded?(Pythonx) ->
+        message =
+          """
+          Pythonx is missing, make sure to add it as a dependency:
 
-      exception = RuntimeError.exception(message)
-      {{:error, :error, exception, []}, []}
+              #{Macro.to_string(Livebook.Runtime.Definitions.pythonx_dependency().dep)}
+          """
+
+        exception = RuntimeError.exception(message)
+        {{:error, :error, exception, []}, []}
+
+      not Version.match?(pythonx_version(), pythonx_requirement) ->
+        message =
+          "this Livebook version requires Pythonx #{pythonx_requirement}," <>
+            " but #{pythonx_version()} is installed, please update the dependency"
+
+        exception = RuntimeError.exception(message)
+        {{:error, :error, exception, []}, []}
+
+      true ->
+        :ok
     end
   end
+
+  defp pythonx_version(), do: List.to_string(Application.spec(:pythonx)[:vsn])
 
   defp identifier_dependencies(context, tracer_info, prev_context) do
     identifiers_used = MapSet.new()
